@@ -37,7 +37,7 @@ print(matches_played)
 
 
 
-sys.exit()
+#sys.exit()
 
 recent_games = games_played.iloc[-10:] #The syntax of .iloc in Pandas is: df.iloc[row_indexer, column_indexer]. ***Want to order games by week, or games played***
 recent_games = recent_games.reset_index(drop=True)
@@ -83,8 +83,8 @@ for row in schedule_previous['home_team']:
     if row not in teams_last_season:
         teams_last_season.append(row) 
 
-top90th = last_season_standings[:2] #2  Later may break this into percentiles as opposed to final standings. Might be worth averaging the last 2 seasons standings as well.
-top75th = last_season_standings[2:5] #3
+top90th = last_season_standings[:2] #2  Later may break this into percentiles as opposed to final standings. Might be worth averaging the last 2 seasons standings as well. 
+top75th = last_season_standings[2:5] #3  **Only works with leagues with 20 teams, 3 religation spots**
 top50th = last_season_standings[5:10] #5
 top25th = last_season_standings[10:15] #5
 top0th = last_season_standings[15:17] #2
@@ -125,33 +125,42 @@ for i in range(len(recent_games)): #range(10)
         winningt = 'tie'
         losingt = 'tie'
     
-    gamescore=0
-    if hg+ag >=4 and abs(hg-ag) <= 1: #were there 4 or more goals scored where the final scoreline was within 1 goal.
-        gamescore += 2
-    if hg+ag >=6 and abs(hg-ag) <= 2: #were there 6 or more goals scored where the final scoreline was within 2 goals.
-        gamescore += 2
-    if abs(hg-ag) !=0 and hg+ag > 1: #was the difference in the scoreline not 0, did the game not tie. Was there a winner. AND was there more than 1 goal scored in the match.
+    gamescore = 0
+    if hg+ag > 0: #There was at least one goal scored.
         gamescore += 1
-    if hg+ag > 0: #were there any goals scored.
+    if hg+ag >= 3 and abs(hg-ag) <= 1: #There were 3 or more goals scored in the match and the scoreline was within 1 goal.
         gamescore += 1
-    
+    if hg+ag >= 4 and abs(hg-ag) <= 1: #There were 4 or more goals scored where the final scoreline was within 1 goal.
+        gamescore += 2
+    if hg+ag >= 6 and abs(hg-ag) <= 2: #There were 6 or more goals scored where the final scoreline was within 2 goals.
+        gamescore += 2
+
+    if losingt in top90th: #Underdog winning conditions.
+        gamescore += 1
+    if winningt in bothalf and losingt in tophalf:
+        gamescore += 1
+    if winningt in (bothalf, top50th) and losingt in tophalf:
+        gamescore += 1
     if winningt in bot5 and losingt in tophalf:
+        gamescore += 1
+    if winningt in top25th and losingt in top5:
         gamescore += 1
     if winningt in bot5 and losingt in top5:
         gamescore += 1
-    if winningt in bot5 and losingt in top90th: # +5 points for a team in bot5 if they beat the top 2 teams last season.
-        gamescore += 2
-    if ((homet, awayt) in bot5 and winningt == 'tie') and ((homet, awayt) in top5):
+    if winningt in bot5 and losingt in top90th: # +6 points for a team in bot5 if they beat the top 2 teams last season. team in bot5 if they beat the top 2 teams last season
         gamescore += 1
-    if ((homet, awayt) in newlypromo and winningt == 'tie') and ((homet, awayt) in top90th):
+    if 'Manchester City' in losingt:
         gamescore += 1
-    '''
-    if (winningt in top_0th or top25th) and losingt in top75th:
-        gamescore += 2
-    if (winningt in top0th or top25th) and losingt in top90th:
-        gamescore += 3
 
-    if (winningt in (top90th or top75th)) and losingt in newlypromo:
+    if winningt == 'tie': #Underdog tying conditions.
+        if ((homet, awayt) in bot5) and ((homet, awayt) in top5):
+            gamescore += 1
+        if ((homet, awayt) in bot5) and ((homet, awayt) in top90th):
+            gamescore += 2
+        if ((homet, awayt)in bothalf) and ((homet, awayt) in top5):
+            gamescore += 1
+    '''
+    if (winningt in (top90th or top75th)) and losingt in newlypromo: #Favorite winning conditions. **Want games that have at least one goal to have a point.
         gamescore -= 2
     if (winningt in (top90th or top75th)) and (losingt in top0th or top25th):
         gamescore -= 1
